@@ -48,7 +48,7 @@ app.post("/login", async (req, res) => {
     if (!isLogin) return res.json({ error: "Sai mat khau" });
     const token = jwt.sign(
       { _id: user._id, name: user.name, email: user.email, role: user.role },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
     );
     res.json({ token });
   } catch (err) {
@@ -94,7 +94,7 @@ app.put("/update-profile", auth, async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { name, email, phone, address, img },
-      { new: true }
+      { new: true },
     );
     res.json({ user });
   } catch (err) {
@@ -115,7 +115,7 @@ app.put("/update-cart", async (req, res) => {
     if (authHeaders) {
       const token = authHeaders.split(" ")[1];
       try {
-        const decoded = jwt.verify(token, "key");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         user = await User.findById(decoded._id);
       } catch (err) {
         user = null;
@@ -211,14 +211,14 @@ app.post("/create-order", async (req, res) => {
           price: product.p_discountPrice || product.p_price,
           quantity: item.quantity,
         };
-      })
+      }),
     );
     let user_id = null;
     try {
       const authHeaders = req.headers.authorization;
       if (authHeaders) {
         const token = authHeaders.split(" ")[1];
-        const decoded = jwt.verify(token, "key");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         user_id = decoded?._id;
       }
     } catch (e) {}
@@ -238,7 +238,7 @@ app.post("/create-order", async (req, res) => {
         { p_id: item.productId },
         {
           $inc: { p_stock: -item.quantity },
-        }
+        },
       );
     }
     if (mode === "cart" && user_id) {
@@ -347,7 +347,7 @@ app.put("/admin/orders/:id", auth, checkAdmin, async (req, res) => {
     const order = await Order.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true }
+      { new: true },
     );
     if (!order) return res.json({ error: "không tìm thấy đơn hàng" });
     res.json({ message: "Đã cập nhật", order });
