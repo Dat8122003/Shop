@@ -35,6 +35,7 @@ function App() {
             <ProtectedRoute>
               <Navbar />
               <ProductDetail />
+              <Footer />
             </ProtectedRoute>
           }
         />
@@ -45,6 +46,7 @@ function App() {
             <ProtectedRoute>
               <Navbar />
               <History />
+              <Footer />
             </ProtectedRoute>
           }
         />
@@ -54,6 +56,7 @@ function App() {
             <ProtectedRoute>
               <Navbar />
               <Cart />
+              <Footer />
             </ProtectedRoute>
           }
         />
@@ -63,6 +66,7 @@ function App() {
             <ProtectedRoute>
               <Navbar />
               <Account />
+              <Footer />
             </ProtectedRoute>
           }
         />
@@ -72,6 +76,7 @@ function App() {
             <ProtectedRoute>
               <Navbar />
               <CheckOut />
+              <Footer />
             </ProtectedRoute>
           }
         />
@@ -81,6 +86,7 @@ function App() {
             <ProtectedRoute>
               <Navbar />
               <Admin />
+              <Footer />
             </ProtectedRoute>
           }
         />
