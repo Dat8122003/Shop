@@ -1,225 +1,58 @@
-import { CardContext } from "../context/CardContext";
 import { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { CartContext } from "../context/CartContext";
+
 export default function Navbar() {
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
-  const {
-    setSelectCategory,
-    totalCard,
-    setUser,
-    user,
-    fetchSearch,
-    fetchProducts,
-  } = useContext(CardContext);
-  const catagory = async (c) => {
-    setQuery("");
-    await fetchProducts();
-    setSelectCategory(c);
+  const { user, setUser, totalCard, setSelectItem } = useContext(CartContext);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const goHome = () => { setSelectItem([]); navigate("/"); };
+  const handleSearch = (e) => {
+    e?.preventDefault();
+    if (!search.trim()) return;
+    navigate(`/?q=${encodeURIComponent(search)}`);
+    setOpen(false);
   };
-  const search = async (e) => {
-    if (!e) {
-      catagory(null);
-    } else {
-      await fetchSearch(query);
-    }
-  };
-  const home = async () => {
-    await fetchProducts();
-    navigate("/");
-    catagory(null);
-    setQuery("");
-  };
-  const handleLogout = () => {
+  const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
-    home();
+    setSelectItem([]);
+    setOpen(false);
+    navigate("/");
   };
+
   return (
-    <>
-      <nav className="navbar sticky-top bg-light">
-        <div className="container-fluid gap-1 ">
-          <div className="d-flex justify-content-between w-100">
-            <div className="d-flex flex-column flex-md-row flex-grow-1 gap-2 me-3">
-              <button
-                className="btn btn-light border border-dark fw-bold align-self-start text-nowrap"
-                onClick={home}
-              >
-                TRANG CHỦ
-              </button>
-              <button
-                className="btn btn-dark d-none d-md-block text-nowrap"
-                type="button"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#category"
-              >
-                Danh mục sản phẩm
-              </button>
-              <div className="input-group flex-grow-1">
-                <input
-                  type="text"
-                  className="form-control "
-                  placeholder="Tìm kiếm sản phẩm..."
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") search(query);
-                  }}
-                />
-                <button
-                  className="btn btn-dark"
-                  onClick={(e) => {
-                    search(query);
-                  }}
-                >
-                  {">"}
-                </button>
-              </div>
-            </div>
-            <div className="d-flex gap-2">
-              <div className="d-flex flex-column gap-2">
-                <button
-                  className="btn btn-dark"
-                  onClick={() => navigate("/cart")}
-                >
-                  Giỏ: {totalCard}
-                </button>
-                <button
-                  className="btn btn-dark align-self-end d-md-none"
-                  data-bs-toggle="offcanvas"
-                  data-bs-target="#menuMobile"
-                >
-                  Menu
-                </button>
-              </div>
-              <button
-                className="btn btn-dark d-none d-md-block"
-                onClick={() => (user ? "" : navigate("/login"))}
-                data-bs-toggle="offcanvas"
-                data-bs-target="#account"
-                type="button"
-              >
-                {user?.name || "Đăng nhập"}
-              </button>
-            </div>
-          </div>
-          <div className="offcanvas offcanvas-start" id="menuMobile">
-            <div className="offcanvas-header">
-              <h5>Menu</h5>
-              <button
-                className="btn-close"
-                data-bs-dismiss="offcanvas"
-              ></button>
-            </div>
-            <div className="offcanvas-body d-flex flex-column gap-2">
-              <button
-                className="btn btn-light border border-dark  "
-                onClick={() => (user ? "" : navigate("/login"))}
-                data-bs-toggle="offcanvas"
-                data-bs-target="#account"
-                type="button"
-              >
-                {user?.name || "Đăng nhập"}
-              </button>
-              <button
-                className="btn btn-light border border-dark  "
-                type="button"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#category"
-              >
-                Danh mục sản phẩm
-              </button>
-            </div>
-          </div>
-
-          <div className="offcanvas offcanvas-start" id="category">
-            <div className="offcanvas-header">
-              <h5>Danh mục sản phẩm</h5>
-              <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="offcanvas"
-              ></button>
-            </div>
-
-            <div className="offcanvas-body d-flex flex-column gap-1">
-              <button
-                onClick={() => catagory(null)}
-                data-bs-dismiss="offcanvas"
-                className="btn btn-light border border-dark"
-              >
-                Tất cả
-              </button>
-              <button
-                onClick={() => {
-                  catagory("b");
-                }}
-                data-bs-dismiss="offcanvas"
-                className="btn btn-light border border-dark"
-              >
-                Mô hình xe
-              </button>
-              <button
-                onClick={() => catagory("c")}
-                data-bs-dismiss="offcanvas"
-                className="btn btn-light border border-dark"
-              >
-                Mô hình Motor
-              </button>
-              <button
-                onClick={() => catagory("d")}
-                data-bs-dismiss="offcanvas"
-                className="btn btn-light border border-dark"
-              >
-                Mô hình nhân vật
-              </button>
-            </div>
-          </div>
-          <div className="offcanvas offcanvas-start" id="account">
-            <div className="offcanvas-header">
-              <h5>Tài khoản</h5>
-              <button
-                className="btn-close"
-                data-bs-dismiss="offcanvas"
-              ></button>
-            </div>
-            <div className="offcanvas-body d-flex flex-column gap-2">
-              <button
-                className="btn btn-light border border-dark   "
-                onClick={() => navigate(user ? "/account" : "/login")}
-                data-bs-dismiss="offcanvas"
-              >
-                Tài khoản của tôi
-              </button>
-              <button
-                className="btn btn-light border border-dark  "
-                data-bs-dismiss="offcanvas"
-                onClick={() => navigate(user ? "/history" : "/login")}
-              >
-                Lịch sử mua hàng
-              </button>
-              {user?.role === "admin" && (
-                <button
-                  className="btn btn-light border border-dark  "
-                  data-bs-dismiss="offcanvas"
-                  onClick={() => navigate("/admin")}
-                >
-                  Trang quản lý
-                </button>
+    <header className="sticky top-0 z-40 bg-white border-b border-black">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
+        <button onClick={goHome} className="text-lg sm:text-xl font-black tracking-tighter uppercase">SHOP</button>
+        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl">
+          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm sản phẩm..." className="flex-1 px-3 py-2 border border-neutral-300 focus:border-black focus:outline-none text-sm" />
+          <button type="submit" className="px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest">Tìm</button>
+        </form>
+        <nav className="ml-auto flex items-center gap-2">
+          <Link to="/cart" className="relative px-3 py-2 text-xs font-bold uppercase tracking-widest hover:bg-neutral-100">
+            Giỏ hàng
+            {totalCard > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[10px] flex items-center justify-center rounded-full">{totalCard}</span>}
+          </Link>
+          {user ? (
+            <div className="relative">
+              <button onClick={() => setOpen((o) => !o)} className="px-3 py-2 text-xs font-bold uppercase tracking-widest hover:bg-neutral-100">{user.name}</button>
+              {open && (
+                <div onMouseLeave={() => setOpen(false)} className="absolute right-0 top-full mt-1 w-48 bg-white border border-black shadow-lg">
+                  <Link to="/account" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-xs uppercase tracking-wide hover:bg-neutral-100">Tài khoản</Link>
+                  <Link to="/history" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-xs uppercase tracking-wide hover:bg-neutral-100">Đơn hàng</Link>
+                  {user.role === "admin" && <Link to="/admin" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-xs uppercase tracking-wide hover:bg-neutral-100 font-bold">Quản trị</Link>}
+                  <button onClick={logout} className="w-full text-left px-4 py-2.5 text-xs uppercase tracking-wide hover:bg-neutral-100 border-t border-neutral-200">Đăng xuất</button>
+                </div>
               )}
-              <button
-                className="btn btn-light border border-dark  "
-                data-bs-dismiss="offcanvas"
-                onClick={handleLogout}
-              >
-                Đăng xuất
-              </button>
             </div>
-          </div>
-        </div>
-      </nav>
-    </>
+          ) : (
+            <Link to="/login" className="px-3 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-neutral-800">Đăng nhập</Link>
+          )}
+        </nav>
+      </div>
+    </header>
   );
 }

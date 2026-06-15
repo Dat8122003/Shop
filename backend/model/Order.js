@@ -10,12 +10,13 @@ const orderSchema = new mongoose.Schema({
     {
       productId: String,
       productName: String,
+      variant: { type: String, default: "" },
       price: Number,
       quantity: Number,
     },
   ],
   totalPrice: { type: Number, required: true },
-  status: { type: String, default: "pending" }, // pending, completed, cancelled
+  status: { type: String, default: "Đang đợi" },
   customerName: { type: String, required: true },
   phoneNumber: { type: String, required: true },
   shippingAddress: { type: String, required: true },

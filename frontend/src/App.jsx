@@ -1,98 +1,45 @@
-import Home from "../pages/Home";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
-import Navbar from "../components/Navbar";
-import { Routes, Route } from "react-router-dom";
-import ProductDetail from "../pages/ProductDetail";
-import Cart from "../pages/Cart";
-import Login from "../pages/Login";
-import Account from "../pages/Acount";
-import History from "../pages/History";
-import CheckOut from "../pages/CheckOut";
-import ProtectedRoute from "../components/ProtectedRoute";
-import Admin from "../pages/Admin";
+import { Toaster } from "react-hot-toast";
+import { Route, Routes } from "react-router-dom";
 import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
+import ProtectedRoute from "../components/ProtectedRoute";
+import Account from "../pages/Account";
+import Admin from "../pages/Admin";
+import Cart from "../pages/Cart";
+import CheckOut from "../pages/CheckOut";
+import History from "../pages/History";
+import Home from "../pages/Home";
+import Login from "../pages/Login";
+import ProductDetail from "../pages/ProductDetail";
 
-function App() {
+const Shell = ({ children }) => (
+  <div className="min-h-screen flex flex-col bg-white text-black">
+    <Navbar />
+    <main className="flex-1">{children}</main>
+    <Footer />
+  </div>
+);
+
+const Page = ({ guest, adminOnly, children }) => (
+  <ProtectedRoute guest={guest} adminOnly={adminOnly}>
+    <Shell>{children}</Shell>
+  </ProtectedRoute>
+);
+
+export default function App() {
   return (
     <>
+      <Toaster position="bottom-right" />
       <Routes>
-        <Route
-          path="/"
-          element={
-            <>
-              <ProtectedRoute>
-                <Navbar />
-                <Home />
-                <Footer />
-              </ProtectedRoute>
-            </>
-          }
-        />
-        <Route
-          path="/products/:id"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <ProductDetail />
-              <Footer />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/login" element={<Login />}></Route>
-        <Route
-          path="/history"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <History />
-              <Footer />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/cart"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <Cart />
-              <Footer />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/account"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <Account />
-              <Footer />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <CheckOut />
-              <Footer />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <Admin />
-              <Footer />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<Page guest><Home /></Page>} />
+        <Route path="/products/:id" element={<Page guest><ProductDetail /></Page>} />
+        <Route path="/cart" element={<Page guest><Cart /></Page>} />
+        <Route path="/checkout" element={<Page guest><CheckOut /></Page>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/account" element={<Page><Account /></Page>} />
+        <Route path="/history" element={<Page><History /></Page>} />
+        <Route path="/admin" element={<Page adminOnly><Admin /></Page>} />
       </Routes>
     </>
   );
 }
-
-export default App;

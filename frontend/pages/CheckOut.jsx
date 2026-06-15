@@ -1,144 +1,114 @@
-import { useContext, useState } from "react";
-import { CardContext } from "../context/CardContext";
+import { useContext, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Cancel from "../components/Cancel";
+import { CartContext } from "../context/CartContext";
+import api from "../src/lib/api";
+import { formatVnd, priceOf } from "../src/lib/utils";
+import toast from "react-hot-toast";
+
 export default function CheckOut() {
   const navigate = useNavigate();
-  const {
-    checkOut,
-    products,
-    removeCard,
-    user,
-    fetchUserProfile,
-    fetchProducts,
-    fetchOrders,
-  } = useContext(CardContext);
+  const location = useLocation();
+  const { checkOut, products, user, fetchUserProfile, fetchProducts, fetchOrders, removeCard } = useContext(CartContext);
+
   const [customerName, setCustomerName] = useState(user?.name || "");
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
   const [shippingAddress, setShippingAddress] = useState(user?.address || "");
-  const location = useLocation();
+  const [submitting, setSubmitting] = useState(false);
   const mode = new URLSearchParams(location.search).get("mode");
 
-  const totalPrice = checkOut.reduce((sum, item) => {
-    const pro = products.find((p) => p._id === item.p_id);
-    return sum + (pro.p_discountPrice || pro.p_price) * item.quantity;
+  useEffect(() => {
+    if (user) {
+      setCustomerName((v) => v || user.name || "");
+      setPhoneNumber((v) => v || user.phone || "");
+      setShippingAddress((v) => v || user.address || "");
+    }
+  }, [user]);
+
+  const totalPrice = (checkOut || []).reduce((sum, item) => {
+    const pro = products.find((p) => p.p_id === item.p_id);
+    if (!pro) return sum;
+    const base = priceOf(pro);
+    let adjust = 0;
+    if (item.variant) {
+      const sku = (pro.p_skus || []).find((s) => {
+        const k = Object.keys(s.combo || {}).sort().map((kk) => `${kk}:${s.combo[kk]}`).join("|");
+        return k === item.variant;
+      });
+      if (sku) adjust = Number(sku.priceAdjust || 0);
+    }
+    return sum + (base + adjust) * (item.quantity || 1);
   }, 0);
 
   const completePurchase = async () => {
     if (!customerName || !phoneNumber || !shippingAddress) {
-      alert("Vui lòng điền đầy đủ thông tin");
+      toast.error("Vui lòng điền đầy đủ thông tin");
       return;
     }
-    const token = localStorage.getItem("token");
+    setSubmitting(true);
     try {
-      const res = await fetch("https://shop-ll18.onrender.com/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
-        body: JSON.stringify({
-          products: checkOut,
-          totalPrice,
-          customerName,
-          phoneNumber,
-          shippingAddress,
-          mode,
-        }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        alert("Lỗi thanh toán: " + data.error);
-      } else {
-        alert("Thanh toán thành công!");
-        for (const item of checkOut) {
-          removeCard(item.p_id);
-        }
-        if (token) await fetchUserProfile();
-        fetchProducts();
-        fetchOrders();
-        navigate("/");
-      }
-    } catch (err) {
-      alert("Lỗi kết nối");
-    }
+      const { data } = await api.post("/create-order", { products: checkOut, totalPrice, customerName, phoneNumber, shippingAddress, mode });
+      if (data.error) { toast.error(data.error); return; }
+      toast.success("Đặt hàng thành công");
+      for (const item of checkOut) removeCard(item.p_id, item.variant);
+      if (user) await fetchUserProfile();
+      fetchProducts();
+      fetchOrders();
+      navigate("/");
+    } catch {} finally { setSubmitting(false); }
   };
+
   return (
-    <>
-      <Cancel url="/cart" />
-      <div className="container mt-3 pb-2">
-        <h2 className="text-center mb-4 fw-bold">THANH TOÁN</h2>
-        <div className="row">
-          <div className="col-md-6">
-            <h4>Thông Tin Giao Hàng</h4>
-            <div className="mb-3">
-              <label className="form-label">Tên khách hàng</label>
-              <input
-                type="text"
-                className="form-control"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Số điện thoại</label>
-              <input
-                type="text"
-                className="form-control"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Địa chỉ giao hàng</label>
-              <textarea
-                className="form-control"
-                value={shippingAddress}
-                onChange={(e) => setShippingAddress(e.target.value)}
-              />
-            </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex items-end justify-between mb-6 pb-3 border-b border-black">
+        <h2 className="text-2xl font-black uppercase tracking-tight">Thanh toán</h2>
+        <button onClick={() => navigate("/cart")} className="text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-black">← Quay lại giỏ hàng</button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-widest border-b border-neutral-200 pb-2">Thông tin giao hàng</h3>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5">Họ tên</label>
+            <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full border border-neutral-300 focus:border-black focus:outline-none px-3 py-2 text-sm" />
           </div>
-          <div className="col-md-6">
-            <h4>Thông Tin Đơn Hàng</h4>
-            <div className="border p-3">
-              {checkOut.map((item) => {
-                if (item.p_id) {
-                  const product = products.find((p) => p.p_id === item.p_id);
-                  if (!product) return null;
-                  return (
-                    <div
-                      className="d-flex justify-content-between mb-2"
-                      key={item.p_id}
-                    >
-                      <span>{product.p_name}</span>
-                      <span>
-                        x{item.quantity || 1} -{" "}
-                        {(
-                          (product.p_discountPrice || product.p_price) *
-                          (item.quantity || 1)
-                        ).toLocaleString()}
-                        đ
-                      </span>
-                    </div>
-                  );
-                }
-              })}
-              <hr />
-              <div className="d-flex justify-content-between fw-bold">
-                <span>TỔNG CỘNG:</span>
-                <span className="text-danger">
-                  {totalPrice.toLocaleString()}đ
-                </span>
-              </div>
-            </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5">Số điện thoại</label>
+            <input type="text" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full border border-neutral-300 focus:border-black focus:outline-none px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5">Địa chỉ</label>
+            <textarea rows={4} value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} className="w-full border border-neutral-300 focus:border-black focus:outline-none px-3 py-2 text-sm" />
           </div>
         </div>
-        <div className="mt-2 text-center">
-          <button className="btn btn-danger" onClick={completePurchase}>
-            Thanh Toán
+
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-widest border-b border-neutral-200 pb-2 mb-4">Đơn hàng</h3>
+          <div className="border border-black divide-y divide-neutral-200">
+            {(checkOut || []).map((item) => {
+              const product = products.find((p) => p.p_id === item.p_id);
+              if (!product) return null;
+              return (
+                <div className="flex items-center justify-between p-3 text-sm" key={`${item.p_id}-${item.variant}`}>
+                  <div className="flex-1">
+                    <div className="font-medium">{product.p_name}</div>
+                    {item.variant && <div className="text-xs text-neutral-500">{item.variant.replaceAll("|", " · ")}</div>}
+                  </div>
+                  <div className="text-xs text-neutral-500 mx-3">×{item.quantity || 1}</div>
+                  <div className="font-semibold w-32 text-right">{formatVnd(priceOf(product) * (item.quantity || 1))}</div>
+                </div>
+              );
+            })}
+            <div className="p-3 flex justify-between font-bold border-t-2 border-black bg-neutral-50">
+              <span className="uppercase tracking-widest text-xs">Tổng cộng</span>
+              <span>{formatVnd(totalPrice)}</span>
+            </div>
+          </div>
+
+          <button onClick={completePurchase} disabled={submitting} className="w-full mt-6 px-6 py-3.5 bg-black text-white font-bold uppercase tracking-widest text-sm hover:bg-neutral-800 disabled:opacity-50">
+            {submitting ? "Đang đặt hàng..." : "Đặt hàng"}
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }

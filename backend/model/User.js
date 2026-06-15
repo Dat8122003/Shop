@@ -5,13 +5,12 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true },
   phone: { type: String },
   address: { type: String },
-  img: {
-    type: String,
-  },
+  img: { type: String },
   role: { type: String, default: "user" },
   cart: [
     {
       p_id: { type: String },
+      variant: { type: String, default: "" },
       quantity: { type: Number, default: 1 },
     },
   ],
